@@ -2,6 +2,7 @@
 
 
 - [ ] Open README (DO IT!!!) AND READ IT!
+- [ ] WRITE DOWN YOUR PASSWORD ON ANOTHER COMPUTER!!!
 - [ ] Forensic Questions (Likely a cipher, or adding a new group. Known questions are to make a group, find a hash for an image or dehashing something, decipher hexadecimal or base64, hidden files and text within images, etc.)
 - [ ] Enable SSH (if necessary), win+r > services.msc > OpenSSH SSH Server > General > Startup > Automatic > Ok
 - [ ] Show hidden files, Explorer > View > Show >✅Hidden Items ✅File name extensions 
