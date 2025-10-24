@@ -72,6 +72,7 @@
 - [ ] Delete accounts/users that are not needed through Computer Management. (Search > Administrative Tools > Computer Management > Local Users and Groups > Users > Delete or add users)
 - [ ] Check for suspicious programs running in Task Manager. (Go to task manager, either ctrl+alt+delete > task manager or win+r > “taskmgr” then look through the running files for suspicious ones.)
 - [ ] Update the computer last, just in case, Taskbar > Update or Settings.
+- [ ] Users can't change system time (somewhere in user or group policies)
 
 
 ## For updating browsers
