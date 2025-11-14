@@ -10,6 +10,8 @@
 - [ ] Password/lockout management (See in checklist)
 - [ ] Group Settings (See in checklist)
 
+## Useful Stuff:
+- Users should say password protected, or they don't have a password (in ctrl panel)
 
 # Competition Checklist:
 
@@ -63,16 +65,20 @@
    * Account lockout duration: 30 Minutes
    * Account lockout threshold: 10
    * Reset account lockout counter after: 30
+- [ ] Password security (Account Policy > Account Lockout Policy)
+   * Account lockout duration: 4 Minutes
 - [ ] Delete and Add groups in Local Users and Groups. (win+r > “lusrmgr.msc” > Groups, then you can add or remove people from groups, add groups, and delete unnecessary groups)
 - [ ] Find hashes through Powershell. (Powershell > Get-filehash |dragged file| > Enter)
 - [ ] Check Shared Folders (Run>fsmgmt.msc) The only ones that should be there are:
     * ADMIN$
     * C$
     * IPC$
+    * NOTE: C (not C$) is not default
 - [ ] Delete accounts/users that are not needed through Computer Management. (Search > Administrative Tools > Computer Management > Local Users and Groups > Users > Delete or add users)
 - [ ] Check for suspicious programs running in Task Manager. (Go to task manager, either ctrl+alt+delete > task manager or win+r > “taskmgr” then look through the running files for suspicious ones.)
 - [ ] Update the computer last, just in case, Taskbar > Update or Settings.
 - [ ] Users can't change system time (somewhere in user or group policies)
+- [ ] Audit Security State Change (Security Settings > Local Policies > Advanced Audit Policy Configuration > System Audit Policies - Local Group Policy Object > Policy Change > System > Audit Security State Change)
 
 
 ## For updating browsers
