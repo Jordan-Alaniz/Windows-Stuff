@@ -9,7 +9,9 @@ This repository contains an automated PowerShell script for CyberPatriot competi
 - PowerShell 5.1 or higher
 - Administrator privileges
 
-### Running the Script
+### Running the Automation Suite
+
+**EASIEST METHOD - Use the Master Control Script:**
 
 1. **Download or clone this repository**
 
@@ -21,16 +23,24 @@ This repository contains an automated PowerShell script for CyberPatriot competi
    cd path\to\Windows-Stuff
    ```
 
-4. **Run the automation script**
+4. **Run the master control script**
    ```powershell
-   .\CyberPatriot-Auto.ps1
+   .\Run-CyberPatriot.ps1
    ```
 
-5. **Use the GUI to select tasks**
-   - The script will open a graphical interface
-   - Select which security hardening tasks you want to perform
-   - Click "Run Selected" to execute the tasks
-   - View the log file for detailed results
+5. **Follow the interactive menu**
+   - Choose Quick Audit for a fast security overview
+   - Run Security Hardening to apply automated fixes
+   - Run File Auditor to find unauthorized files
+   - Run User Auditor to review accounts
+   - Or select "R" to run all tasks in sequence!
+
+**ALTERNATIVE - Run individual scripts:**
+   ```powershell
+   .\CyberPatriot-Auto.ps1    # Main security hardening with GUI
+   .\FileAuditor.ps1           # Find unauthorized files/software
+   .\UserAuditor.ps1           # Review user accounts
+   ```
 
 ## 📋 Features
 
@@ -95,6 +105,7 @@ All actions are logged to a timestamped log file:
 
 ```
 Windows-Stuff/
+├── Run-CyberPatriot.ps1      # ⭐ MASTER CONTROL SCRIPT - Start here!
 ├── CyberPatriot-Auto.ps1     # Main automation script with GUI
 ├── FileAuditor.ps1            # Scans for unauthorized files and software
 ├── UserAuditor.ps1            # Reviews user accounts and permissions
@@ -106,7 +117,24 @@ Windows-Stuff/
 └── scripts/                   # Additional utility scripts
 ```
 
-## 🔧 Additional Helper Scripts
+## 🎮 Master Control Script (Run-CyberPatriot.ps1)
+
+The **Run-CyberPatriot.ps1** script is your main entry point. It provides:
+- Interactive menu for easy navigation
+- Quick audit to assess current security state
+- Orchestrated execution of all tools in the recommended order
+- Easy access to logs, checklists, and documentation
+
+Simply run: `.\Run-CyberPatriot.ps1` and follow the menu!
+
+## 🔧 Individual Scripts
+
+### CyberPatriot-Auto.ps1 (Main Automation)
+The core security hardening script with GUI interface:
+```powershell
+.\CyberPatriot-Auto.ps1
+```
+Features all automated security fixes (firewall, passwords, services, etc.)
 
 ### FileAuditor.ps1
 Scans for unauthorized files and software that should be removed:
