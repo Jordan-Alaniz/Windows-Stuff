@@ -116,7 +116,16 @@ Revision=1
 }
 
 function Disable-InsecureServices {
+    param(
+        [array]$RequiredServices = @()
+    )
+    
     Write-Log "Disabling insecure services..."
+    
+    if ($RequiredServices.Count -gt 0) {
+        Write-Log "Using required services list from README ($($RequiredServices.Count) items)" "INFO"
+    }
+    
     $servicesToDisable = @(
         "RemoteRegistry",
         "RemoteAccess",
@@ -132,6 +141,20 @@ function Disable-InsecureServices {
     
     $successCount = 0
     foreach ($service in $servicesToDisable) {
+        # Check if this service is required per README
+        $isRequired = $false
+        foreach ($reqService in $RequiredServices) {
+            if ($service -like "*$reqService*" -or $reqService -like "*$service*") {
+                $isRequired = $true
+                break
+            }
+        }
+        
+        if ($isRequired) {
+            Write-Log "Skipping $service (required per README)" "INFO"
+            continue
+        }
+        
         try {
             $svc = Get-Service -Name $service -ErrorAction SilentlyContinue
             if ($svc) {
@@ -578,12 +601,33 @@ function Create-GUI {
         $successCount = 0
         $failCount = 0
         
+        # Load README data if available
+        $readmeData = $null
+        $requiredServices = @()
+        if (Test-Path "$ScriptPath\ReadmeData.json") {
+            try {
+                $readmeData = Get-Content "$ScriptPath\ReadmeData.json" -Raw | ConvertFrom-Json
+                Write-Log "Loaded README data for filtering" "INFO"
+                if ($readmeData.RequiredServices) {
+                    $requiredServices = $readmeData.RequiredServices
+                }
+            } catch {
+                Write-Log "Could not load README data: $_" "WARNING"
+            }
+        }
+        
         foreach ($task in $selectedTasks) {
             $statusLabel.Text = "Running: $($task.Tag.Name)..."
             $form.Refresh()
             
             try {
-                $result = & $task.Tag.Function
+                # Pass README data to functions that need it
+                if ($task.Tag.Function -eq "Disable-InsecureServices") {
+                    $result = Disable-InsecureServices -RequiredServices $requiredServices
+                } else {
+                    $result = & $task.Tag.Function
+                }
+                
                 if ($result -ne $false) {
                     $successCount++
                 } else {
@@ -601,6 +645,10 @@ function Create-GUI {
         Write-Log "Automation Complete" "INFO"
         Write-Log "Success: $successCount | Failed: $failCount" "INFO"
         Write-Log "========================================" "INFO"
+        Write-Log "" "INFO"
+        Write-Log "⚠️  IMPORTANT: Run Windows Update LAST!" "WARNING"
+        Write-Log "After completing all manual tasks, run Windows Update as the final step." "WARNING"
+        Write-Log "========================================" "INFO"
         
         $statusLabel.Text = "Complete! Success: $successCount | Failed: $failCount"
         
@@ -611,7 +659,8 @@ function Create-GUI {
         $selectAllBtn.Enabled = $true
         $deselectAllBtn.Enabled = $true
         
-        Show-Notification "Automation Complete" "Tasks completed!`nSuccess: $successCount`nFailed: $failCount`n`nCheck log file for details." "Information"
+        # Show completion message with Windows Update reminder
+        Show-Notification "Automation Complete" "Tasks completed!`nSuccess: $successCount`nFailed: $failCount`n`n⚠️ REMEMBER: Run Windows Update LAST!`nAfter all manual tasks are complete.`n`nCheck log file for details." "Information"
     })
     $form.Controls.Add($runButton)
     

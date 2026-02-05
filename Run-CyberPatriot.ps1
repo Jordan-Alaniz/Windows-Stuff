@@ -29,14 +29,18 @@ function Show-Menu {
     Write-Host "================ $Title ================" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "RECOMMENDED WORKFLOW:" -ForegroundColor Green
+    Write-Host "  0. Analyze README (Extract competition requirements)"
     Write-Host "  1. Run Quick Audit (Fast scan of current state)"
     Write-Host "  2. Run Security Hardening (Automated fixes)"
     Write-Host "  3. Run File Auditor (Find files to delete)"
     Write-Host "  4. Run User Auditor (Review accounts)"
+    Write-Host "  5. Windows Update (RUN THIS LAST!)"
     Write-Host ""
     Write-Host "INDIVIDUAL SCRIPTS:" -ForegroundColor Green
+    Write-Host "  [0] Analyze README - Parse competition requirements"
     Write-Host "  [Q] Quick Audit - Fast overview of security issues"
     Write-Host "  [A] Security Hardening - Run CyberPatriot-Auto.ps1"
+    Write-Host "  [S] Server Hardening - Run ServerHardening.ps1 (Windows Server only)"
     Write-Host "  [F] File Auditor - Scan for unauthorized files/software"
     Write-Host "  [U] User Auditor - Review user accounts and groups"
     Write-Host ""
@@ -44,8 +48,9 @@ function Show-Menu {
     Write-Host "  [L] View all log files"
     Write-Host "  [C] Open checklist folder"
     Write-Host "  [H] Open Quick Start guide"
+    Write-Host "  [W] Run Windows Update (DO THIS LAST!)"
     Write-Host ""
-    Write-Host "  [R] Run all recommended tasks (1-4 in sequence)"
+    Write-Host "  [R] Run all recommended tasks (0-4 in sequence)"
     Write-Host "  [X] Exit"
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Yellow
@@ -149,6 +154,34 @@ function Run-SecurityHardening {
     }
 }
 
+function Run-AnalyzeReadme {
+    Write-Host "`n[*] Launching README Analyzer..." -ForegroundColor Cyan
+    $readmeScript = Join-Path $ScriptPath "AnalyzeReadme.ps1"
+    
+    if (Test-Path $readmeScript) {
+        & $readmeScript
+    } else {
+        Write-Host "ERROR: AnalyzeReadme.ps1 not found!" -ForegroundColor Red
+        Write-Host "Expected location: $readmeScript" -ForegroundColor Red
+        Write-Host "Press any key to continue..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+}
+
+function Run-ServerHardening {
+    Write-Host "`n[*] Launching Server Hardening Script..." -ForegroundColor Cyan
+    $serverScript = Join-Path $ScriptPath "ServerHardening.ps1"
+    
+    if (Test-Path $serverScript) {
+        & $serverScript
+    } else {
+        Write-Host "ERROR: ServerHardening.ps1 not found!" -ForegroundColor Red
+        Write-Host "Expected location: $serverScript" -ForegroundColor Red
+        Write-Host "Press any key to continue..."
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+}
+
 function Run-FileAuditor {
     Write-Host "`n[*] Launching File Auditor..." -ForegroundColor Cyan
     $fileAuditScript = Join-Path $ScriptPath "FileAuditor.ps1"
@@ -230,6 +263,34 @@ function Open-QuickStartGuide {
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
+function Run-WindowsUpdate {
+    Write-Host "`n[*] Opening Windows Update..." -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Yellow
+    Write-Host "  WINDOWS UPDATE - RUN THIS LAST!" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Windows Update should be run AFTER:" -ForegroundColor Cyan
+    Write-Host "  ✓ All security hardening is complete" -ForegroundColor Gray
+    Write-Host "  ✓ All unauthorized files are deleted" -ForegroundColor Gray
+    Write-Host "  ✓ All unauthorized users are removed" -ForegroundColor Gray
+    Write-Host "  ✓ All manual tasks are finished" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Opening Windows Update Settings..." -ForegroundColor Green
+    Write-Host ""
+    
+    # Open Windows Update settings
+    Start-Process "ms-settings:windowsupdate"
+    
+    Write-Host "In the Windows Update window:" -ForegroundColor Yellow
+    Write-Host "  1. Click 'Check for updates'" -ForegroundColor Gray
+    Write-Host "  2. Install all available updates" -ForegroundColor Gray
+    Write-Host "  3. Restart if required" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Press any key to continue..."
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+}
+
 function Run-AllTasks {
     Write-Host "`n" 
     Write-Host "========================================" -ForegroundColor Magenta
@@ -237,13 +298,16 @@ function Run-AllTasks {
     Write-Host "========================================" -ForegroundColor Magenta
     Write-Host ""
     
-    Write-Host "[1/4] Running Quick Audit..." -ForegroundColor Cyan
+    Write-Host "[0/5] Analyzing README..." -ForegroundColor Cyan
+    Run-AnalyzeReadme
+    
+    Write-Host "`n[1/5] Running Quick Audit..." -ForegroundColor Cyan
     Run-QuickAudit
     
-    Write-Host "`n[2/4] Running Security Hardening..." -ForegroundColor Cyan
+    Write-Host "`n[2/5] Running Security Hardening..." -ForegroundColor Cyan
     Run-SecurityHardening
     
-    Write-Host "`n[3/4] Running File Auditor..." -ForegroundColor Cyan
+    Write-Host "`n[3/5] Running File Auditor..." -ForegroundColor Cyan
     Run-FileAuditor
     
     Write-Host "`n[4/4] Running User Auditor..." -ForegroundColor Cyan

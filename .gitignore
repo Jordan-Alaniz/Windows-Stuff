@@ -3,6 +3,9 @@
 *.txt
 CyberPatriot-AutoLog-*.txt
 
+# Generated data files (competition-specific)
+ReadmeData.json
+
 # PowerShell temporary files
 *.tmp
 

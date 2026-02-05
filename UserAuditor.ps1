@@ -22,6 +22,11 @@ function Write-AuditLog {
 }
 
 function Get-UserAccountStatus {
+    param(
+        [array]$AuthorizedUsers = @(),
+        [array]$AuthorizedAdmins = @()
+    )
+    
     Write-AuditLog "Analyzing user accounts..." "INFO"
     
     $users = Get-LocalUser
@@ -31,6 +36,9 @@ function Get-UserAccountStatus {
     Write-AuditLog "=== USER ACCOUNTS ===" "INFO"
     Write-AuditLog "Total users: $($users.Count)" "INFO"
     Write-AuditLog "Current user: $currentUser" "INFO"
+    if ($AuthorizedUsers.Count -gt 0) {
+        Write-AuditLog "Authorized users from README: $($AuthorizedUsers.Count)" "INFO"
+    }
     Write-AuditLog "" "INFO"
     
     foreach ($user in $users) {
@@ -46,6 +54,33 @@ function Get-UserAccountStatus {
         Write-AuditLog "  Last Logon: $lastLogon" "INFO"
         Write-AuditLog "  Password Expires: $($user.PasswordExpires)" "INFO"
         Write-AuditLog "  Password Required: $($user.PasswordRequired)" "INFO"
+        
+        # Check against authorized user list
+        if ($AuthorizedUsers.Count -gt 0) {
+            $isAuthorized = $false
+            foreach ($authUser in $AuthorizedUsers) {
+                if ($user.Name -eq $authUser -or $user.Name -like $authUser) {
+                    $isAuthorized = $true
+                    break
+                }
+            }
+            
+            # Also check if it's the current user or a built-in system account
+            if ($user.Name -eq $currentUser -or 
+                $user.Name -eq "Administrator" -or 
+                $user.Name -eq "Guest" -or 
+                $user.Name -eq "DefaultAccount" -or
+                $user.Name -like "IUSR*" -or
+                $user.Name -like "ASPNET*") {
+                $isAuthorized = $true
+            }
+            
+            if (-not $isAuthorized -and $user.Enabled) {
+                Write-AuditLog "  ⚠️  UNAUTHORIZED: User not in README authorized list!" "WARNING"
+            } elseif ($isAuthorized) {
+                Write-AuditLog "  ✓ Authorized per README" "SUCCESS"
+            }
+        }
         
         # Check if this is a built-in account
         if ($user.Name -eq "Administrator" -or $user.Name -eq "Guest" -or $user.Name -eq "DefaultAccount") {
@@ -274,7 +309,36 @@ Write-AuditLog "========================================" "INFO"
 Write-AuditLog "CyberPatriot User Account Auditor" "INFO"
 Write-AuditLog "========================================" "INFO"
 
-Get-UserAccountStatus
+# Try to load README data if available
+$readmeData = $null
+$authorizedUsers = @()
+$authorizedAdmins = @()
+
+if (Test-Path "$PSScriptRoot\ReadmeData.json") {
+    try {
+        $readmeData = Get-Content "$PSScriptRoot\ReadmeData.json" -Raw | ConvertFrom-Json
+        Write-AuditLog "✓ Loaded README data - will check against authorized users" "SUCCESS"
+        
+        if ($readmeData.AuthorizedUsers) {
+            $authorizedUsers = $readmeData.AuthorizedUsers
+            Write-AuditLog "  Found $($authorizedUsers.Count) authorized users in README" "INFO"
+        }
+        
+        if ($readmeData.Administrators) {
+            $authorizedAdmins = $readmeData.Administrators
+            Write-AuditLog "  Found $($authorizedAdmins.Count) authorized administrators in README" "INFO"
+        }
+    } catch {
+        Write-AuditLog "Could not load README data: $_" "WARNING"
+        Write-AuditLog "Run AnalyzeReadme.ps1 first to parse competition requirements" "INFO"
+    }
+} else {
+    Write-AuditLog "No README data found - run AnalyzeReadme.ps1 first for better accuracy" "WARNING"
+}
+
+Write-AuditLog "" "INFO"
+
+Get-UserAccountStatus -AuthorizedUsers $authorizedUsers -AuthorizedAdmins $authorizedAdmins
 Get-GroupMemberships
 Get-AdminUsers
 Get-PasswordPolicies

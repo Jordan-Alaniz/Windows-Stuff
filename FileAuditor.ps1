@@ -77,7 +77,15 @@ function Find-MediaFiles {
 }
 
 function Find-UnauthorizedSoftware {
+    param(
+        [array]$AllowedSoftware = @()
+    )
+    
     Write-AuditLog "Scanning for unauthorized software..." "INFO"
+    
+    if ($AllowedSoftware.Count -gt 0) {
+        Write-AuditLog "Using allowed software list from README ($($AllowedSoftware.Count) items)" "INFO"
+    }
     
     $unauthorizedPatterns = @(
         "*BitTorrent*", "*uTorrent*", "*Transmission*",
@@ -105,7 +113,23 @@ function Find-UnauthorizedSoftware {
             
             foreach ($pattern in $unauthorizedPatterns) {
                 $matches = $programs | Where-Object { $_.DisplayName -like $pattern }
-                $foundSoftware += $matches
+                
+                # Filter out allowed software
+                foreach ($match in $matches) {
+                    $isAllowed = $false
+                    
+                    foreach ($allowed in $AllowedSoftware) {
+                        if ($match.DisplayName -like "*$allowed*" -or $allowed -like "*$($match.DisplayName)*") {
+                            $isAllowed = $true
+                            Write-AuditLog "  Skipping '$($match.DisplayName)' - allowed per README" "INFO"
+                            break
+                        }
+                    }
+                    
+                    if (-not $isAllowed) {
+                        $foundSoftware += $match
+                    }
+                }
             }
         } catch {
             # Ignore errors
@@ -118,11 +142,23 @@ function Find-UnauthorizedSoftware {
         foreach ($pattern in $unauthorizedPatterns) {
             $matches = $wmiPrograms | Where-Object { $_.Name -like $pattern }
             foreach ($match in $matches) {
-                $foundSoftware += [PSCustomObject]@{
-                    DisplayName = $match.Name
-                    DisplayVersion = $match.Version
-                    Publisher = $match.Vendor
-                    UninstallString = $match.IdentifyingNumber
+                $isAllowed = $false
+                
+                foreach ($allowed in $AllowedSoftware) {
+                    if ($match.Name -like "*$allowed*" -or $allowed -like "*$($match.Name)*") {
+                        $isAllowed = $true
+                        Write-AuditLog "  Skipping '$($match.Name)' - allowed per README" "INFO"
+                        break
+                    }
+                }
+                
+                if (-not $isAllowed) {
+                    $foundSoftware += [PSCustomObject]@{
+                        DisplayName = $match.Name
+                        DisplayVersion = $match.Version
+                        Publisher = $match.Vendor
+                        UninstallString = $match.IdentifyingNumber
+                    }
                 }
             }
         }
@@ -217,6 +253,29 @@ Write-AuditLog "Files related to CyberPatriot and Forensics questions are automa
 Write-AuditLog "ALWAYS manually review files before deleting to avoid removing forensics evidence!" "WARNING"
 Write-AuditLog "" "INFO"
 
+# Try to load README data if available
+$readmeData = $null
+$allowedSoftware = @()
+
+if (Test-Path "$PSScriptRoot\ReadmeData.json") {
+    try {
+        $readmeData = Get-Content "$PSScriptRoot\ReadmeData.json" -Raw | ConvertFrom-Json
+        Write-AuditLog "✓ Loaded README data - will filter allowed software" "SUCCESS"
+        
+        if ($readmeData.AllowedSoftware) {
+            $allowedSoftware = $readmeData.AllowedSoftware
+            Write-AuditLog "  Found $($allowedSoftware.Count) allowed programs in README" "INFO"
+        }
+    } catch {
+        Write-AuditLog "Could not load README data: $_" "WARNING"
+        Write-AuditLog "Run AnalyzeReadme.ps1 first to parse competition requirements" "INFO"
+    }
+} else {
+    Write-AuditLog "No README data found - run AnalyzeReadme.ps1 first for better accuracy" "WARNING"
+}
+
+Write-AuditLog "" "INFO"
+
 # Check paths to scan
 $pathsToScan = @(
     "$env:USERPROFILE\Desktop",
@@ -230,7 +289,7 @@ $pathsToScan = @(
 # Find unauthorized software
 Write-AuditLog "" "INFO"
 Write-AuditLog "=== UNAUTHORIZED SOFTWARE ===" "INFO"
-$software = Find-UnauthorizedSoftware
+$software = Find-UnauthorizedSoftware -AllowedSoftware $allowedSoftware
 if ($software -and $software.Count -gt 0) {
     Write-AuditLog "Found $($software.Count) potentially unauthorized programs:" "WARNING"
     foreach ($prog in $software) {
