@@ -96,12 +96,40 @@ All actions are logged to a timestamped log file:
 ```
 Windows-Stuff/
 ├── CyberPatriot-Auto.ps1     # Main automation script with GUI
+├── FileAuditor.ps1            # Scans for unauthorized files and software
+├── UserAuditor.ps1            # Reviews user accounts and permissions
 ├── README.md                  # This file
+├── QUICK_START.md             # Quick reference guide
 ├── checklist/                 # Reference materials
 │   ├── windows-checklist.md   # Manual checklist
 │   └── *.pdf                  # Answer keys and guides
 └── scripts/                   # Additional utility scripts
 ```
+
+## 🔧 Additional Helper Scripts
+
+### FileAuditor.ps1
+Scans for unauthorized files and software that should be removed:
+```powershell
+.\FileAuditor.ps1
+```
+- Detects unauthorized software (BitTorrent, Wireshark, CCleaner, etc.)
+- Finds media files (music, videos, games)
+- Lists suspicious running processes
+- Reviews startup items
+- Generates detailed audit log
+
+### UserAuditor.ps1
+Reviews user accounts, groups, and permissions:
+```powershell
+.\UserAuditor.ps1
+```
+- Lists all user accounts with status
+- Shows group memberships
+- Identifies users with admin privileges
+- Reviews password policies
+- Opens interactive GUI for user management
+- Generates detailed audit log
 
 ## ⚠️ Important Notes
 
@@ -137,8 +165,11 @@ Based on the checklist, you should still manually:
    - Read the README file first (always!)
    - Write down your password
    - Answer forensic questions
-   - Run this automation script for quick wins
-   - Perform manual tasks from the checklist
+   - **Run the automation script:** `.\CyberPatriot-Auto.ps1`
+   - **Run the file auditor:** `.\FileAuditor.ps1` (to find files to delete)
+   - **Run the user auditor:** `.\UserAuditor.ps1` (to review accounts)
+   - Delete unauthorized files and software based on audit results
+   - Perform remaining manual tasks from the checklist
    - Review and verify all changes
    - Run system updates last
 
