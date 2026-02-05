@@ -7,7 +7,12 @@
     It provides a GUI interface for selecting which tasks to perform.
 .NOTES
     MUST BE RUN AS ADMINISTRATOR
-    This script does NOT change the current user's password
+    
+    ⚠️ IMPORTANT SAFETY NOTES:
+    - This script does NOT change the current user's password
+    - This script does NOT delete files (only configures security settings)
+    - This script does NOT interfere with CyberPatriot competition files
+    - Always read the competition README before running any automation!
 #>
 
 # Add Windows Forms assembly for GUI
@@ -282,6 +287,90 @@ function Start-QuickScan {
     }
 }
 
+function Start-FullScan {
+    Write-Log "Starting Windows Defender FULL scan..."
+    Write-Log "WARNING: Full scan can take 30+ minutes!" "WARNING"
+    try {
+        Start-MpScan -ScanType FullScan -AsJob | Out-Null
+        Write-Log "Full scan started successfully (running in background)" "SUCCESS"
+        Write-Log "This will continue running even after this script closes" "INFO"
+        return $true
+    } catch {
+        Write-Log "Failed to start full scan: $_" "ERROR"
+        return $false
+    }
+}
+
+function Update-MalwareDefinitions {
+    Write-Log "Updating Windows Defender malware definitions..."
+    try {
+        Update-MpSignature
+        Write-Log "Malware definitions updated successfully" "SUCCESS"
+        return $true
+    } catch {
+        Write-Log "Failed to update malware definitions: $_" "ERROR"
+        return $false
+    }
+}
+
+function Find-SuspiciousFiles {
+    Write-Log "Scanning for suspicious file locations..."
+    $suspiciousLocations = @(
+        "$env:TEMP",
+        "$env:USERPROFILE\AppData\Local\Temp",
+        "$env:USERPROFILE\Downloads",
+        "C:\Windows\Temp"
+    )
+    
+    $suspiciousExtensions = @("*.vbs", "*.bat", "*.ps1", "*.exe", "*.scr", "*.cmd")
+    $recentFiles = @()
+    
+    foreach ($location in $suspiciousLocations) {
+        if (Test-Path $location) {
+            foreach ($ext in $suspiciousExtensions) {
+                try {
+                    $files = Get-ChildItem -Path $location -Filter $ext -File -ErrorAction SilentlyContinue |
+                             Where-Object { $_.LastWriteTime -gt (Get-Date).AddDays(-7) } |
+                             Select-Object -First 20
+                    if ($files) {
+                        $recentFiles += $files
+                        foreach ($file in $files) {
+                            Write-Log "  Found recent suspicious file: $($file.FullName)" "WARNING"
+                        }
+                    }
+                } catch {
+                    # Ignore access denied
+                }
+            }
+        }
+    }
+    
+    if ($recentFiles.Count -gt 0) {
+        Write-Log "Found $($recentFiles.Count) suspicious files - review manually!" "WARNING"
+    } else {
+        Write-Log "No obviously suspicious files found in common locations" "SUCCESS"
+    }
+    
+    return $recentFiles
+}
+
+function Check-MalwareRemovalTool {
+    Write-Log "Checking for Microsoft Malicious Software Removal Tool..."
+    try {
+        $mrtPath = "$env:SystemRoot\System32\MRT.exe"
+        if (Test-Path $mrtPath) {
+            Write-Log "MRT found - You can run it manually: Win+R > mrt" "INFO"
+            return $true
+        } else {
+            Write-Log "MRT not found on system" "WARNING"
+            return $false
+        }
+    } catch {
+        Write-Log "Could not check for MRT: $_" "ERROR"
+        return $false
+    }
+}
+
 function Show-UserAccounts {
     Write-Log "Listing user accounts..."
     try {
@@ -324,6 +413,29 @@ function Hide-LastUsername {
 # GUI Creation
 
 function Create-GUI {
+    # Show initial safety warning
+    $warningResult = [System.Windows.Forms.MessageBox]::Show(
+        "⚠️ IMPORTANT SAFETY REMINDERS ⚠️`n`n" +
+        "Before running this script:`n`n" +
+        "1. Have you READ the competition README file?`n" +
+        "2. Have you WRITTEN DOWN your password?`n" +
+        "3. Have you completed FORENSICS QUESTIONS?`n`n" +
+        "This script:`n" +
+        "✓ Does NOT change your password`n" +
+        "✓ Does NOT delete files`n" +
+        "✓ Does NOT interfere with competition files`n" +
+        "✓ Only applies security configurations`n`n" +
+        "Continue?",
+        "Safety Check - READ THIS",
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Warning
+    )
+    
+    if ($warningResult -ne [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Log "User cancelled at safety warning" "INFO"
+        return
+    }
+    
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "CyberPatriot Automation Tool"
     $form.Size = New-Object System.Drawing.Size(600, 700)
@@ -361,7 +473,10 @@ function Create-GUI {
         @{Name = "Enable Automatic Updates"; Function = "Enable-AutomaticUpdates"; Description = "Enable Windows automatic updates"},
         @{Name = "Configure Audit Policies"; Function = "Configure-AuditPolicies"; Description = "Enable security event auditing"},
         @{Name = "Enable Windows Security"; Function = "Enable-WindowsSecurity"; Description = "Enable Windows Defender"},
-        @{Name = "Run Quick Scan"; Function = "Start-QuickScan"; Description = "Start Windows Defender quick scan"},
+        @{Name = "Update Malware Definitions"; Function = "Update-MalwareDefinitions"; Description = "⚠️ Update virus definitions (do this first!)"},
+        @{Name = "Run Quick Scan"; Function = "Start-QuickScan"; Description = "Start Windows Defender quick scan (5-10 min)"},
+        @{Name = "Run FULL Scan"; Function = "Start-FullScan"; Description = "⚠️ Start FULL malware scan (30+ min, runs in background)"},
+        @{Name = "Find Suspicious Files"; Function = "Find-SuspiciousFiles"; Description = "Scan temp folders for recent suspicious files"},
         @{Name = "Enable Secure Logon"; Function = "Enable-SecureLogon"; Description = "Require Ctrl+Alt+Del to log in"},
         @{Name = "Hide Last Username"; Function = "Hide-LastUsername"; Description = "Don't show last username on login"}
     )

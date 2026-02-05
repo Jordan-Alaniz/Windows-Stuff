@@ -5,8 +5,12 @@
 .DESCRIPTION
     Scans for unauthorized files (media, games) and software that should be removed.
     This is a companion script to the main automation tool.
+    
+    ⚠️ IMPORTANT: This script only REPORTS findings - it does NOT delete anything!
+    You must manually review and delete files to avoid removing forensics evidence.
 .NOTES
     Run as Administrator
+    DOES NOT DELETE FILES - Only reports what it finds
 #>
 
 param(
@@ -14,6 +18,16 @@ param(
 )
 
 $LogFile = "FileAudit-$(Get-Date -Format 'yyyyMMdd-HHmmss').txt"
+
+# Excluded paths - DO NOT scan these (CyberPatriot competition files, forensics)
+$ExcludedPaths = @(
+    "*CyberPatriot*",
+    "*Forensics*",
+    "*ForensicQuestion*",
+    "*README*",
+    "*CYBERPATRIOT*",
+    "*Desktop\README*"
+)
 
 function Write-AuditLog {
     param([string]$Message, [string]$Type = "INFO")
@@ -42,7 +56,16 @@ function Find-MediaFiles {
                      Where-Object { 
                          $_.FullName -notlike "*Windows*" -and 
                          $_.FullName -notlike "*Program Files*" -and
-                         $_.FullName -notlike "*AppData\Local\Microsoft*"
+                         $_.FullName -notlike "*AppData\Local\Microsoft*" -and
+                         # IMPORTANT: Exclude CyberPatriot and Forensics files
+                         $_.FullName -notlike "*CyberPatriot*" -and
+                         $_.FullName -notlike "*Forensic*" -and
+                         $_.FullName -notlike "*CYBERPATRIOT*" -and
+                         # Exclude common forensics question files
+                         $_.Name -notlike "README*" -and
+                         $_.Name -notlike "*forensic*" -and
+                         $_.Name -notlike "*answer*" -and
+                         $_.Name -notlike "*question*"
                      }
             $results += $files
         } catch {
@@ -187,6 +210,12 @@ function Find-StartupItems {
 Write-AuditLog "========================================" "INFO"
 Write-AuditLog "CyberPatriot File and Software Auditor" "INFO"
 Write-AuditLog "========================================" "INFO"
+Write-AuditLog "" "INFO"
+Write-AuditLog "⚠️  IMPORTANT SAFETY NOTICE ⚠️" "WARNING"
+Write-AuditLog "This script ONLY REPORTS findings - it does NOT delete anything!" "WARNING"
+Write-AuditLog "Files related to CyberPatriot and Forensics questions are automatically excluded." "WARNING"
+Write-AuditLog "ALWAYS manually review files before deleting to avoid removing forensics evidence!" "WARNING"
+Write-AuditLog "" "INFO"
 
 # Check paths to scan
 $pathsToScan = @(

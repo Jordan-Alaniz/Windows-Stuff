@@ -105,8 +105,10 @@ All actions are logged to a timestamped log file:
 
 ```
 Windows-Stuff/
-├── Run-CyberPatriot.ps1      # ⭐ MASTER CONTROL SCRIPT - Start here!
-├── CyberPatriot-Auto.ps1     # Main automation script with GUI
+├── START-HERE.bat             # 🚀 Double-click to start (batch launcher)
+├── Run-CyberPatriot.ps1       # ⭐ MASTER CONTROL SCRIPT - Main menu
+├── CyberPatriot-Auto.ps1      # Security hardening automation with GUI
+├── MalwareHunter.ps1          # 🦠 Enhanced malware detection (USE THIS!)
 ├── FileAuditor.ps1            # Scans for unauthorized files and software
 ├── UserAuditor.ps1            # Reviews user accounts and permissions
 ├── README.md                  # This file
@@ -159,24 +161,56 @@ Reviews user accounts, groups, and permissions:
 - Opens interactive GUI for user management
 - Generates detailed audit log
 
-## ⚠️ Important Notes
+### MalwareHunter.ps1 ⚠️ NEW - Malware was a BIG problem last season!
+Comprehensive malware detection and removal tool:
+```powershell
+.\MalwareHunter.ps1
+```
+- **Updates Windows Defender malware definitions**
+- Scans for malicious processes currently running
+- Finds suspicious files in temp/download folders
+- Checks startup items and scheduled tasks for malware
+- Analyzes HOSTS file for malicious entries
+- Offers to run full system scan (30+ minutes)
+- **USE THIS EARLY** - Malware removal can give major points!
 
-### What This Script Does NOT Do
+## ⚠️ CRITICAL SAFETY INFORMATION
+
+### 🛡️ Forensics Questions Protection
+**IMPORTANT:** Some files on the competition system are needed for forensics questions!
+- The scripts automatically exclude files/folders with "CyberPatriot", "Forensic", or "README" in the name
+- **FileAuditor.ps1 ONLY REPORTS findings - it does NOT delete anything**
+- **ALWAYS manually review files before deleting**
+- Files needed for forensics points include:
+  - Images with hidden data
+  - Files with specific hashes
+  - Encrypted or encoded files
+  - README files with competition instructions
+
+### What These Scripts Do NOT Do
 - **Does NOT change your current user's password** - You must manage passwords manually
+- **Does NOT delete ANY files** - Scripts only report findings; you delete manually
 - **Does NOT delete unauthorized software automatically** - It will detect but requires manual removal
-- **Does NOT modify registry beyond security settings** - Only makes documented security changes
+- **Does NOT interfere with CyberPatriot competition files** - These are automatically excluded
+- **Does NOT modify registry beyond documented security settings**
 - **Does NOT answer forensic questions** - These require manual analysis
+
+### Before Running ANY Script
+1. ✅ **Read the competition README file thoroughly**
+2. ✅ **Write down your password on another computer** - Critical!
+3. ✅ **Complete all forensics questions FIRST** - Don't risk losing points
+4. ✅ **Review what each script does** - Understand the changes being made
 
 ### Manual Tasks Still Required
 
 Based on the checklist, you should still manually:
 
-1. **Read the competition README file thoroughly**
-2. **Write down your password on another computer** - Critical!
-3. **Answer forensic questions** - Cannot be automated
-4. **Review user accounts** - Verify which users should exist
-5. **Review installed software** - Decide what should be removed
-6. **Check for media files** - Delete unauthorized music, games, etc.
+1. ~~**Read the competition README file thoroughly**~~ (Do this FIRST, before scripts!)
+2. ~~**Write down your password on another computer**~~ (Do this FIRST!)
+3. ~~**Answer forensic questions**~~ (Do this BEFORE running FileAuditor!)
+4. **Review user accounts** - Verify which users should exist per README
+5. **Review installed software** - Decide what should be removed per README
+6. **Check for media files** - Use FileAuditor, then MANUALLY delete after review
 7. **Review browser settings** - Configure Firefox/Chrome security
 8. **Update browsers** - Firefox, Chrome, Edge
 9. **Review shared folders** - Check for unauthorized shares

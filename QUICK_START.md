@@ -1,35 +1,84 @@
 # Quick Start Guide - CyberPatriot Automation
 
+## ⚠️ CRITICAL: Read This First!
+
+**FORENSICS QUESTIONS WARNING:**
+- Some files are needed for forensics questions and give you points!
+- FileAuditor.ps1 only REPORTS files - it does NOT delete them
+- Competition README files are automatically excluded
+- ALWAYS manually review before deleting ANY file
+- Complete forensics questions BEFORE using FileAuditor!
+
 ## Step-by-Step Competition Workflow
 
 ### 1️⃣ FIRST - Before Running Anything
-- [ ] **READ THE COMPETITION README** - This is critical!
+- [ ] **READ THE COMPETITION README** - This is critical! It tells you requirements.
 - [ ] **Write down your password on another device** - You'll need it!
 - [ ] Take note of any specific competition requirements
+- [ ] Identify which files/folders contain forensics questions
 
-### 2️⃣ Answer Forensic Questions
+### 2️⃣ Answer Forensic Questions (DO THIS BEFORE FILE AUDITOR!)
 - [ ] Look for forensic questions in the competition materials
-- [ ] Common tasks:
+- [ ] **CRITICAL:** Some files may look like unauthorized media but are needed for forensics!
+- [ ] Common forensics tasks:
   - Create a new group
-  - Find file hashes (use PowerShell: `Get-FileHash`)
+  - Find file hashes (use PowerShell: `Get-FileHash <filepath>`)
   - Decode base64/hexadecimal
-  - Find hidden files/text in images
+  - Find hidden files/text in images (steganography)
   - Dehash passwords
+  - Find specific text in files
+- [ ] **Complete ALL forensics questions before scanning for files to delete**
+- [ ] **NOTE:** After answering forensics, you may still need to DELETE those files for security points!
+  - Example: An image used for hash question may still be unauthorized media
+  - Answer the question FIRST, then delete the file AFTER
 
-### 3️⃣ Run the Automation Script
-
-**Option A: Run with GUI (Recommended)**
+### 3️⃣ Run Malware Hunter (CRITICAL - Malware was a BIG problem last season!)
 ```powershell
 # Open PowerShell as Administrator
 cd path\to\Windows-Stuff
+.\MalwareHunter.ps1
+```
+This will:
+- Update malware definitions
+- Scan for malicious processes
+- Find suspicious files in temp folders
+- Check startup items and scheduled tasks
+- Check HOSTS file for malware entries
+- Offer to run full system scan
+
+**After reviewing results, delete confirmed malware!**
+
+### 4️⃣ Run the Security Automation Script
+
+**Option A: Run with Master Control (Easiest)**
+```powershell
+.\Run-CyberPatriot.ps1
+```
+Or double-click: **START-HERE.bat**
+
+**Option B: Run Security Hardening Directly**
+```powershell
 .\CyberPatriot-Auto.ps1
 ```
-Then use the graphical interface to select and run tasks.
+Then use the graphical interface to select and run security tasks.
 
-**Option B: Run All Tasks (Advanced)**
-If you want to run all tasks without the GUI, you can modify the script or run individual functions.
+### 5️⃣ Run File and User Auditors
 
-### 4️⃣ Manual Security Tasks
+**Find unauthorized files:**
+```powershell
+.\FileAuditor.ps1
+```
+- Reviews files but does NOT delete them
+- Manually review and delete files AFTER forensics are complete
+
+**Review user accounts:**
+```powershell
+.\UserAuditor.ps1
+```
+- Shows all accounts, groups, and permissions
+- Helps identify unauthorized users
+
+### 6️⃣ Manual Security Tasks
 
 After running the automation, complete these manual tasks:
 
