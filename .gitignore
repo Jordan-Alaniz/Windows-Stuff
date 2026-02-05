@@ -1,0 +1,28 @@
+# Log files
+*.log
+*.txt
+CyberPatriot-AutoLog-*.txt
+
+# PowerShell temporary files
+*.tmp
+
+# Windows temporary files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+
+# Test/temp directories
+temp/
+tmp/
+test/
