@@ -310,19 +310,20 @@ function Run-AllTasks {
     Write-Host "`n[3/5] Running File Auditor..." -ForegroundColor Cyan
     Run-FileAuditor
     
-    Write-Host "`n[4/4] Running User Auditor..." -ForegroundColor Cyan
+    Write-Host "`n[4/5] Running User Auditor..." -ForegroundColor Cyan
     Run-UserAuditor
     
     Write-Host "`n" 
     Write-Host "========================================" -ForegroundColor Green
-    Write-Host "  ALL TASKS COMPLETE!" -ForegroundColor Green
+    Write-Host "  AUTOMATED TASKS COMPLETE!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
     Write-Host "  1. Review the log files" -ForegroundColor Gray
     Write-Host "  2. Delete unauthorized files found by File Auditor" -ForegroundColor Gray
     Write-Host "  3. Adjust user accounts as needed" -ForegroundColor Gray
-    Write-Host "  4. Run Windows Update" -ForegroundColor Gray
+    Write-Host "  4. Complete manual tasks from checklist" -ForegroundColor Gray
+    Write-Host "  5. ⚠️  RUN WINDOWS UPDATE (Option W) - DO THIS LAST!" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Press any key to return to menu..."
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -348,13 +349,16 @@ do {
     $choice = Read-Host
     
     switch ($choice.ToUpper()) {
+        '0' { Run-AnalyzeReadme }
         'Q' { Run-QuickAudit }
         'A' { Run-SecurityHardening }
+        'S' { Run-ServerHardening }
         'F' { Run-FileAuditor }
         'U' { Run-UserAuditor }
         'L' { View-AllLogs }
         'C' { Open-ChecklistFolder }
         'H' { Open-QuickStartGuide }
+        'W' { Run-WindowsUpdate }
         'R' { Run-AllTasks }
         'X' { 
             Write-Host "`nExiting... Good luck with CyberPatriot!" -ForegroundColor Green
