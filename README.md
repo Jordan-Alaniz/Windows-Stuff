@@ -221,9 +221,23 @@ Reviews user accounts, groups, and permissions:
 - **Checks against authorized users** from README
 - Shows group memberships
 - Identifies users with admin privileges
+- **NEW: Verifies admin access** - checks if right users are admins
+- **NEW: Password strength analysis** - checks for weak/old passwords
 - Reviews password policies
 - Opens interactive GUI for user management
 - Generates detailed audit log
+
+**Admin Verification:**
+- Compares actual admins vs authorized admins from README
+- Flags unauthorized admins (shouldn't have access)
+- Flags missing admins (should have access but don't)
+
+**Password Strength Checks:**
+- Identifies users without password requirements
+- Finds expired passwords
+- Detects passwords that never expire
+- Flags old passwords (>60 or >90 days)
+- Checks password configuration compliance
 
 ### MalwareHunter.ps1 ⚠️ Malware was a BIG problem last season!
 Comprehensive malware detection and removal tool:

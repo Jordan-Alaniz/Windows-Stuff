@@ -162,6 +162,256 @@ function Get-AdminUsers {
     }
 }
 
+function Verify-AdminAccess {
+    <#
+    .SYNOPSIS
+        Verifies that the right users have admin access
+    .DESCRIPTION
+        Compares actual administrators against authorized administrators from README
+        Identifies users who shouldn't have admin access and users who should
+    #>
+    param(
+        [array]$AuthorizedAdmins = @()
+    )
+    
+    Write-AuditLog "=== ADMIN ACCESS VERIFICATION ===" "INFO"
+    
+    if ($AuthorizedAdmins.Count -eq 0) {
+        Write-AuditLog "No authorized admin list from README - skipping verification" "WARNING"
+        Write-AuditLog "Run AnalyzeReadme.ps1 first to get authorized admin list" "INFO"
+        Write-AuditLog "" "INFO"
+        return
+    }
+    
+    Write-AuditLog "Authorized administrators from README: $($AuthorizedAdmins.Count)" "INFO"
+    foreach ($authAdmin in $AuthorizedAdmins) {
+        Write-AuditLog "  - $authAdmin" "INFO"
+    }
+    Write-AuditLog "" "INFO"
+    
+    try {
+        # Get current administrators
+        $currentAdmins = Get-LocalGroupMember -Group "Administrators" -ErrorAction Stop
+        
+        # Extract just the usernames (remove domain/computer prefix)
+        $currentAdminNames = @()
+        foreach ($admin in $currentAdmins) {
+            $name = $admin.Name
+            # Remove computer/domain prefix
+            if ($name -match '\\(.+)$') {
+                $name = $matches[1]
+            }
+            $currentAdminNames += $name
+        }
+        
+        # Check for unauthorized admins
+        $unauthorizedAdmins = @()
+        foreach ($currentAdmin in $currentAdminNames) {
+            $isAuthorized = $false
+            
+            # Skip built-in system accounts
+            if ($currentAdmin -eq "Administrator" -or 
+                $currentAdmin -like "IUSR*" -or 
+                $currentAdmin -like "ASPNET*" -or
+                $currentAdmin -eq $env:USERNAME) {
+                $isAuthorized = $true
+            } else {
+                # Check against authorized list
+                foreach ($authAdmin in $AuthorizedAdmins) {
+                    if ($currentAdmin -eq $authAdmin -or $currentAdmin -like $authAdmin) {
+                        $isAuthorized = $true
+                        break
+                    }
+                }
+            }
+            
+            if (-not $isAuthorized) {
+                $unauthorizedAdmins += $currentAdmin
+            }
+        }
+        
+        # Check for missing admins (should be admin but aren't)
+        $missingAdmins = @()
+        foreach ($authAdmin in $AuthorizedAdmins) {
+            $isCurrentAdmin = $false
+            foreach ($currentAdmin in $currentAdminNames) {
+                if ($currentAdmin -eq $authAdmin -or $currentAdmin -like $authAdmin) {
+                    $isCurrentAdmin = $true
+                    break
+                }
+            }
+            
+            if (-not $isCurrentAdmin) {
+                $missingAdmins += $authAdmin
+            }
+        }
+        
+        # Report findings
+        Write-AuditLog "=== ADMIN VERIFICATION RESULTS ===" "INFO"
+        
+        if ($unauthorizedAdmins.Count -gt 0) {
+            Write-AuditLog "⚠️  UNAUTHORIZED ADMINISTRATORS FOUND: $($unauthorizedAdmins.Count)" "WARNING"
+            foreach ($unadmin in $unauthorizedAdmins) {
+                Write-AuditLog "  ❌ $unadmin - Should NOT have admin access!" "WARNING"
+            }
+        } else {
+            Write-AuditLog "✓ No unauthorized administrators found" "SUCCESS"
+        }
+        Write-AuditLog "" "INFO"
+        
+        if ($missingAdmins.Count -gt 0) {
+            Write-AuditLog "⚠️  MISSING ADMINISTRATORS: $($missingAdmins.Count)" "WARNING"
+            foreach ($missAdmin in $missingAdmins) {
+                Write-AuditLog "  ❌ $missAdmin - Should have admin access but doesn't!" "WARNING"
+            }
+        } else {
+            Write-AuditLog "✓ All authorized users have admin access" "SUCCESS"
+        }
+        Write-AuditLog "" "INFO"
+        
+        return [PSCustomObject]@{
+            UnauthorizedAdmins = $unauthorizedAdmins
+            MissingAdmins = $missingAdmins
+        }
+        
+    } catch {
+        Write-AuditLog "Error verifying admin access: $_" "ERROR"
+        return $null
+    }
+}
+
+function Test-PasswordStrength {
+    <#
+    .SYNOPSIS
+        Checks if users have strong password configurations
+    .DESCRIPTION
+        Evaluates password age, complexity requirements, and policy compliance
+        Cannot test actual password strength (Windows security) but checks configuration
+    #>
+    
+    Write-AuditLog "=== PASSWORD STRENGTH ANALYSIS ===" "INFO"
+    
+    # Get all local users
+    $users = Get-LocalUser | Where-Object { $_.Enabled -eq $true }
+    
+    Write-AuditLog "Analyzing password configuration for $($users.Count) enabled users..." "INFO"
+    Write-AuditLog "" "INFO"
+    
+    $weakPasswordUsers = @()
+    $expiredPasswordUsers = @()
+    $noPasswordRequiredUsers = @()
+    $neverExpiresUsers = @()
+    
+    foreach ($user in $users) {
+        $issues = @()
+        
+        # Check if password is required
+        if (-not $user.PasswordRequired) {
+            Write-AuditLog "❌ $($user.Name): Password NOT required!" "WARNING"
+            $noPasswordRequiredUsers += $user.Name
+            $issues += "No password required"
+        }
+        
+        # Check if password never expires
+        if ($user.PasswordNeverExpires) {
+            Write-AuditLog "⚠️  $($user.Name): Password set to NEVER expire" "WARNING"
+            $neverExpiresUsers += $user.Name
+            $issues += "Password never expires"
+        }
+        
+        # Check password age
+        if ($user.PasswordLastSet) {
+            $passwordAge = (Get-Date) - $user.PasswordLastSet
+            
+            if ($passwordAge.TotalDays -gt 90) {
+                Write-AuditLog "⚠️  $($user.Name): Password is $([int]$passwordAge.TotalDays) days old (>90 days)" "WARNING"
+                $weakPasswordUsers += $user.Name
+                $issues += "Old password ($([int]$passwordAge.TotalDays) days)"
+            } elseif ($passwordAge.TotalDays -gt 60) {
+                Write-AuditLog "⚠️  $($user.Name): Password is $([int]$passwordAge.TotalDays) days old (approaching 90 day limit)" "WARNING"
+                $issues += "Aging password ($([int]$passwordAge.TotalDays) days)"
+            }
+        } else {
+            Write-AuditLog "❌ $($user.Name): Password has NEVER been set!" "WARNING"
+            $weakPasswordUsers += $user.Name
+            $issues += "Password never set"
+        }
+        
+        # Check if password is expired
+        if ($user.PasswordExpired) {
+            Write-AuditLog "❌ $($user.Name): Password is EXPIRED!" "WARNING"
+            $expiredPasswordUsers += $user.Name
+            $issues += "Password expired"
+        }
+        
+        # Check user flags for weak password indicators
+        if ($user.UserMayChangePassword -eq $false -and $user.Name -ne "Administrator" -and $user.Name -ne "Guest") {
+            Write-AuditLog "⚠️  $($user.Name): User cannot change their own password" "WARNING"
+            $issues += "Cannot change password"
+        }
+        
+        if ($issues.Count -eq 0) {
+            Write-AuditLog "✓ $($user.Name): Password configuration OK" "SUCCESS"
+        }
+        
+        Write-AuditLog "" "INFO"
+    }
+    
+    # Summary
+    Write-AuditLog "=== PASSWORD STRENGTH SUMMARY ===" "INFO"
+    
+    if ($noPasswordRequiredUsers.Count -gt 0) {
+        Write-AuditLog "❌ Users with NO PASSWORD REQUIRED: $($noPasswordRequiredUsers.Count)" "WARNING"
+        foreach ($user in $noPasswordRequiredUsers) {
+            Write-AuditLog "    $user" "WARNING"
+        }
+    } else {
+        Write-AuditLog "✓ All users require passwords" "SUCCESS"
+    }
+    Write-AuditLog "" "INFO"
+    
+    if ($expiredPasswordUsers.Count -gt 0) {
+        Write-AuditLog "❌ Users with EXPIRED passwords: $($expiredPasswordUsers.Count)" "WARNING"
+        foreach ($user in $expiredPasswordUsers) {
+            Write-AuditLog "    $user" "WARNING"
+        }
+    } else {
+        Write-AuditLog "✓ No expired passwords" "SUCCESS"
+    }
+    Write-AuditLog "" "INFO"
+    
+    if ($neverExpiresUsers.Count -gt 0) {
+        Write-AuditLog "⚠️  Users with passwords that NEVER EXPIRE: $($neverExpiresUsers.Count)" "WARNING"
+        foreach ($user in $neverExpiresUsers) {
+            Write-AuditLog "    $user" "WARNING"
+        }
+    }
+    Write-AuditLog "" "INFO"
+    
+    if ($weakPasswordUsers.Count -gt 0) {
+        Write-AuditLog "⚠️  Users with OLD/WEAK password configurations: $($weakPasswordUsers.Count)" "WARNING"
+        foreach ($user in $weakPasswordUsers) {
+            Write-AuditLog "    $user" "WARNING"
+        }
+    }
+    Write-AuditLog "" "INFO"
+    
+    Write-AuditLog "RECOMMENDATIONS:" "INFO"
+    Write-AuditLog "  1. Ensure all users have password complexity enabled" "INFO"
+    Write-AuditLog "  2. Set minimum password length to 10+ characters" "INFO"
+    Write-AuditLog "  3. Force password changes for passwords >90 days old" "INFO"
+    Write-AuditLog "  4. Enable password expiration (except service accounts)" "INFO"
+    Write-AuditLog "  5. Check Group Policy password settings" "INFO"
+    Write-AuditLog "" "INFO"
+    
+    return [PSCustomObject]@{
+        NoPasswordRequired = $noPasswordRequiredUsers
+        ExpiredPasswords = $expiredPasswordUsers
+        NeverExpires = $neverExpiresUsers
+        WeakOrOld = $weakPasswordUsers
+    }
+}
+
 function Get-PasswordPolicies {
     Write-AuditLog "=== PASSWORD POLICIES ===" "INFO"
     
@@ -341,6 +591,13 @@ Write-AuditLog "" "INFO"
 Get-UserAccountStatus -AuthorizedUsers $authorizedUsers -AuthorizedAdmins $authorizedAdmins
 Get-GroupMemberships
 Get-AdminUsers
+
+# NEW: Verify admin access against README requirements
+Verify-AdminAccess -AuthorizedAdmins $authorizedAdmins
+
+# NEW: Check password strength
+Test-PasswordStrength
+
 Get-PasswordPolicies
 
 Write-AuditLog "========================================" "INFO"

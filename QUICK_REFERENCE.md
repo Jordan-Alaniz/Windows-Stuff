@@ -70,9 +70,18 @@ Get-FileHash C:\Path\To\File.jpg -Algorithm MD5
 ## 🔍 Manual Tasks (After Scripts)
 
 ### Users
+- **Check admin access** (UserAuditor.ps1 does this automatically!)
+  - Verify only authorized users have admin rights
+  - Remove unauthorized admins
+  - Add missing authorized admins
+- **Check password strength** (UserAuditor.ps1 does this automatically!)
+  - Force password changes for old passwords (>90 days)
+  - Enable password expiration
+  - Require passwords for all accounts
+  - Set password complexity requirements
 - Delete unauthorized users
-- Remove users from Administrators group
-- Ensure passwords are set
+- Remove users from Administrators group if not authorized
+- Ensure all users have strong passwords set
 
 ### Software
 - Remove via Programs & Features (appwiz.cpl)
